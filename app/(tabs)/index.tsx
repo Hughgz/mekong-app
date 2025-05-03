@@ -1,75 +1,263 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Card, IconButton, Surface, Text, useTheme } from 'react-native-paper';
+import DashboardHeader from '../../components/DashboardHeader';
+import { supabase } from '../../services/supabase';
+import { Customer } from '../../types/customer';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function DashboardScreen() {
+  const theme = useTheme();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default function HomeScreen() {
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      setCustomers(data || []);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalBottlesDelivered = customers.reduce((sum, customer) => sum + customer.total_bottles_delivered, 0);
+  const totalRevenue = customers.reduce((sum, customer) => sum + customer.total_amount, 0);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <DashboardHeader
+        totalCustomers={customers.length}
+        totalBottlesDelivered={totalBottlesDelivered}
+        totalRevenue={totalRevenue}
+      />
+      <ScrollView 
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Surface style={styles.statsContainer} elevation={1}>
+          <View style={styles.statsRow}>
+            <Card style={styles.statCard} mode="elevated">
+              <Card.Content style={styles.statCardContent}>
+                <View style={styles.statIconContainer}>
+                  <IconButton 
+                    icon="account-group" 
+                    size={24} 
+                    iconColor="#1976D2" 
+                    style={styles.statIcon}
+                  />
+                </View>
+                <View style={styles.statInfo}>
+                  <Text variant="bodyMedium" style={styles.statLabel}>Tổng số khách hàng</Text>
+                  <Text variant="headlineMedium" style={styles.statValue}>
+                    {customers.length}
+                  </Text>
+                </View>
+              </Card.Content>
+            </Card>
+
+            <Card style={styles.statCard} mode="elevated">
+              <Card.Content style={styles.statCardContent}>
+                <View style={styles.statIconContainer}>
+                  <IconButton 
+                    icon="water" 
+                    size={24} 
+                    iconColor="#1976D2" 
+                    style={styles.statIcon}
+                  />
+                </View>
+                <View style={styles.statInfo}>
+                  <Text variant="bodyMedium" style={styles.statLabel}>Tổng số bình đã giao</Text>
+                  <Text variant="headlineMedium" style={styles.statValue}>
+                    {totalBottlesDelivered}
+                  </Text>
+                </View>
+              </Card.Content>
+            </Card>
+          </View>
+
+          <View style={styles.statsRow}>
+            <Card style={styles.statCard} mode="elevated">
+              <Card.Content style={styles.statCardContent}>
+                <View style={styles.statIconContainer}>
+                  <IconButton 
+                    icon="cash" 
+                    size={24} 
+                    iconColor="#1976D2" 
+                    style={styles.statIcon}
+                  />
+                </View>
+                <View style={styles.statInfo}>
+                  <Text variant="bodyMedium" style={styles.statLabel}>Tổng doanh thu</Text>
+                  <Text variant="headlineMedium" style={styles.statValue}>
+                    {totalRevenue.toLocaleString()}đ
+                  </Text>
+                </View>
+              </Card.Content>
+            </Card>
+
+            <Card style={styles.statCard} mode="elevated">
+              <Card.Content style={styles.statCardContent}>
+                <View style={styles.statIconContainer}>
+                  <IconButton 
+                    icon="chart-line" 
+                    size={24} 
+                    iconColor="#1976D2" 
+                    style={styles.statIcon}
+                  />
+                </View>
+                <View style={styles.statInfo}>
+                  <Text variant="bodyMedium" style={styles.statLabel}>Doanh thu trung bình</Text>
+                  <Text variant="headlineMedium" style={styles.statValue}>
+                    {customers.length > 0 
+                      ? (totalRevenue / customers.length).toLocaleString() 
+                      : '0'}đ
+                  </Text>
+                </View>
+              </Card.Content>
+            </Card>
+          </View>
+        </Surface>
+
+        <Surface style={styles.recentCustomers} elevation={1}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>Khách hàng gần đây</Text>
+          {customers.slice(0, 5).map((customer) => (
+            <Card key={customer.id} style={styles.customerCard} mode="elevated">
+              <Card.Content style={styles.customerContent}>
+                <View style={styles.customerInfo}>
+                  <Text variant="titleMedium" style={styles.customerName}>
+                    {customer.name}
+                  </Text>
+                  <Text variant="bodyMedium" style={styles.customerPhone}>
+                    {customer.phone}
+                  </Text>
+                </View>
+                <View style={styles.customerStats}>
+                  <Text variant="bodyMedium" style={styles.customerStat}>
+                    Đã giao: {customer.total_bottles_delivered}
+                  </Text>
+                  <Text variant="bodyMedium" style={styles.customerStat}>
+                    Tổng tiền: {customer.total_amount.toLocaleString()}đ
+                  </Text>
+                </View>
+              </Card.Content>
+            </Card>
+          ))}
+        </Surface>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 12,
+  },
+  statsContainer: {
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    padding: 12,
+    marginBottom: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+  statCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    padding: 8,
   },
-  stepContainer: {
-    gap: 8,
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    backgroundColor: '#E3F2FD',
+  },
+  statIcon: {
+    margin: 0,
+  },
+  statInfo: {
+    flex: 1,
+  },
+  statLabel: {
+    color: '#666',
+    fontSize: 12,
+  },
+  statValue: {
+    color: '#1976D2',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  recentCustomers: {
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    padding: 12,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+    color: '#1976D2',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  customerCard: {
     marginBottom: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  customerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 8,
+  },
+  customerInfo: {
+    flex: 1,
+  },
+  customerName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 2,
+    color: '#1976D2',
+  },
+  customerPhone: {
+    color: '#666',
+    fontSize: 12,
+  },
+  customerStats: {
+    alignItems: 'flex-end',
+  },
+  customerStat: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
   },
 });
